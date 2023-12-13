@@ -3,6 +3,7 @@ import re
 from generators import *
 
 LABEL_PATTERN = re.compile(r'\[([A-Z]+)\]')
+TAGS = ["EMAIL", "ID", "PHONE", "DRIVER", "PASS", "CC"]
 
 def search_for_names(sentence, male_names, female_names, surnames):
     found_person = False
@@ -26,39 +27,44 @@ def search_for_names(sentence, male_names, female_names, surnames):
     return found_person, first_name, surname
 
 def generate_fake_value(placeholder, male_names, female_names, surnames, placenames, first_name=None, surname=None):
-    if placeholder == "[EMAIL]":
+    if placeholder == "EMAIL":
         return generate_fake_email(male_names, female_names, surnames, first_name, surname)
-    elif placeholder == "[ID]":
+    elif placeholder == "ID":
         return generate_fake_national_id()
-    elif placeholder == "[PHONE]":
+    elif placeholder == "PHONE":
         return generate_fake_phone_number()
-    elif placeholder == "[DRIVER]":
+    elif placeholder == "DRIVER":
         return generate_fake_drivers_license_id()
-    elif placeholder == "[PASS]":
+    elif placeholder == "PASS":
         return generate_fake_passport_number()
-    elif placeholder == "[CC]":
+    elif placeholder == "CC":
         return generate_fake_creditcard_number()
     else:
         print("Unknown placeholder", placeholder)
         return placeholder  # Return the original placeholder if not recognized
 
 
-def replace_placeholders(sentence, male_names, female_names, surnames, placenames):
-    placeholders = ["[EMAIL]", "[ID]", "[PHONE]", "[DRIVER]", "[PASS]", "[CC]"]
+def replace_placeholders(sentence, male_names, female_names, surnames, placenames, keep_tag=False):
 
-    for placeholder in placeholders:
-        while placeholder in sentence:
-            if placeholder == "[EMAIL]":
-                #Search if a name is mentioned
+    for tag in TAGS:
+        while "[" + tag + "]" in sentence:
+            if tag == "EMAIL":
+                # Search if a name is mentioned
                 found_person, first_name, surname = search_for_names(sentence, male_names, female_names, surnames)
-                fake_value = generate_fake_value(placeholder, male_names, female_names, surnames, placenames, first_name, surname)
+                fake_value = generate_fake_value(tag, male_names, female_names, surnames, placenames, first_name, surname)
             else:
-                fake_value = generate_fake_value(placeholder, male_names, female_names, surnames, placenames)
-            sentence = sentence.replace(placeholder, fake_value, 1)
+                fake_value = generate_fake_value(tag, male_names, female_names, surnames, placenames)
+            
+            if keep_tag:
+                fake_value = f"[X{tag}]" + fake_value + f"[/{tag}]"
+            
+            sentence = sentence.replace("[" + tag + "]", fake_value, 1)
+            
+    sentence = sentence.replace("[X", "[")
 
     return sentence
 
-def process_data(source_data_file, modified_data_file, names_file, surnames_file, placenames_file):
+def process_data(source_data_file, modified_data_file, names_file, surnames_file, placenames_file, keep_tag):
     print(f"Processing data from {source_data_file}...")
     
     #read artificial labels
@@ -88,10 +94,7 @@ def process_data(source_data_file, modified_data_file, names_file, surnames_file
             line = line.strip()
             matches = LABEL_PATTERN.findall(line)
             if matches:
-    #             print(line)
-    #             print(replace_placeholders(line))
-    #             print()
-                modified = replace_placeholders(line, male_names, female_names, surnames, placenames)
+                modified = replace_placeholders(line, male_names, female_names, surnames, placenames, keep_tag)
                 fout.write(modified + '\n')
             else:
                 fout.write(line + '\n')
@@ -105,11 +108,13 @@ def main():
     parser.add_argument('-names', '-n', help='Names file', required=True)
     parser.add_argument('-surnames', '-r', help='Surnames file', required=True)
     parser.add_argument('-places', '-p', help='Placenames file', required=True)
+    parser.add_argument('-keeptag', '-t', help='Maintain tags in XML form', 
+                        required=False, action='store_true', default=False)
 
     args = parser.parse_args()
 
     # Call the function to process the data with the provided parameters
-    process_data(args.source, args.output, args.names, args.surnames, args.places)
+    process_data(args.source, args.output, args.names, args.surnames, args.places, args.keeptag)
 
 if __name__ == "__main__":
     main()
