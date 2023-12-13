@@ -1,0 +1,7 @@
+out/*
+in/*
+__pycache__/
+__pycache__/*
+.DS_Store
+hausa/.DS_Store
+kanuri/.DS_Store
