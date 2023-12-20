@@ -4,6 +4,8 @@ from generators import *
 
 LABEL_PATTERN = re.compile(r'\[([A-Z]+)\]')
 TAGS = ["EMAIL", "ID", "PHONE", "DRIVER", "PASS", "CC"]
+TAG_REPLACE = {"EMAIL":"USER_ID", "CC":"USER_ID", "PHONE":"USER_ID",
+              "PASS":"GOVT_ID", "DRIVER":"GOVT_ID", "ID":"GOVT_ID"}
 
 def search_for_names(sentence, male_names, female_names, surnames):
     found_person = False
@@ -56,7 +58,7 @@ def replace_placeholders(sentence, male_names, female_names, surnames, placename
                 fake_value = generate_fake_value(tag, male_names, female_names, surnames, placenames)
             
             if keep_tag:
-                fake_value = f"[X{tag}]" + fake_value + f"[/{tag}]"
+                fake_value = f"[X{TAG_REPLACE[tag]}]" + fake_value + f"[/{TAG_REPLACE[tag]}]"
             
             sentence = sentence.replace("[" + tag + "]", fake_value, 1)
             
